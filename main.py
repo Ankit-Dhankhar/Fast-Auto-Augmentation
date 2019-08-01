@@ -11,7 +11,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 from model.baseline import BaseNet
-from utils import train, test
+from model.squeezenet import SqueezeNet
 
 parser = argparse.ArgumentParser(description='MicroNet Challenge')
 
@@ -28,16 +28,16 @@ parser.add_argument("--seed", type=int, default=0,
 
 parser.add_argument_group("Optimization related arguments")
 parser.add_argument("--lr", type=float, default=1e-3,
-                   help="learning rate (default: 0)")
+                   help="learning rate (default:1e-3)")
 parser.add_argument("--epochs", type=int, default=100,
                    help="number of epochs to train (default: 50)")
-parser.add_argument("--batch-size", type=int, default=128,
-                   help="Input batch size (default: 128)")
+parser.add_argument("--batch-size", type=int, default=16,
+                   help="Input batch size (default: 16)")
 
 parser.add_argument("--overfit", action="store_true", default=False,
                    help="Overfit model on small batch size(128 examples), "
                     "meant for debugging")
-parser.add_argument("--log-interval", type=int, default=100,
+parser.add_argument("--log-interval", type=int, default=1000,
                     help="Frequency of logging progress.")
 parser.add_argument("--save-freq", type=int, default=100,
                   help="Interval to save model checkpoints")
@@ -73,10 +73,10 @@ testDataset  = datasets.CIFAR100(root=args.data_dir, train=False, transform=tran
 
 if args.overfit is True:
     trainDataset.data = trainDataset.data[:256]
-    testDataset.data  = testDataset.data[:256]
+    testDataset.data  = trainDataset.data[:256]
 
-trainLoader = DataLoader(trainDataset, shuffle=True, num_workers=8, batch_size=args.batch_size)
-testLoader = DataLoader(testDataset, shuffle=True, num_workers=8, batch_size=args.batch_size)
+trainLoader = DataLoader(trainDataset, shuffle=False, num_workers=8, batch_size=args.batch_size)
+testLoader = DataLoader(testDataset, shuffle=False, num_workers=8, batch_size=args.batch_size)
 
 print("Batch Size : ", args.batch_size)
 print("Number of batches in training set : ", trainLoader.__len__())
@@ -87,13 +87,53 @@ print("Number of batches in testing set : ", testLoader.__len__())
 #  -----------------------------------------------------------------------
 model = BaseNet().to(device)
 print("Device : ", device)
-if "cuda" in str(device):
-    model = torch.nn.DataParallel(model, args.gpu_ids)
-optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
-
+# if "cuda" in str(device):
+#     model = torch.nn.DataParallel(model, args.gpu_ids)
+optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=0.9)
+criterion = nn.CrossEntropyLoss()
 
 for epoch in range(0, args.epochs):
-    train(args, model, device, trainLoader, optimizer, epoch)
-    test(args, model, device, testLoader)
-    if epoch % args.save_freq == 0:
-        torch.save(model.state_dict(), os.path.join(args.save_path,"basenet_{}.pth".format(epoch)))
+    model.train()
+    print("Training")
+    for batch_idx, (data, target) in enumerate(trainLoader):
+        optimizer.zero_grad()
+        output = model(data)
+        loss = criterion(output, target)
+        loss.backward()
+        optimizer.step()
+        if batch_idx % args.log_interval == 0:
+            print('Train Epoch: {} [{}/{} {:.0f}%)]\tLoss: {:.6f}'.format(
+                epoch, batch_idx * len(data), len(trainLoader.dataset),
+                100. * batch_idx / len(trainLoader), loss.item()))
+    model.eval()
+    loss = 0
+    correct = 0
+    with torch.no_grad():
+        for data, target in trainLoader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            loss = criterion(output, target).item()
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+    loss /= len(trainLoader.dataset)
+
+    print('Train set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        loss, correct, len(trainLoader.dataset),
+        100. * correct / len(trainLoader.dataset)))
+    print("Testing")
+    loss = 0
+    correct = 0
+    with torch.no_grad():
+        for data, target in testLoader:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            loss = F.nll_loss(output, target, reduction='sum').item()
+            pred = output.argmax(dim=1, keepdim=True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
+    loss /= len(testLoader.dataset)
+
+    print('Test set: Average loss: {:.4f}, Accuracy: {}/{} ({:.0f}%)\n'.format(
+        loss, correct, len(testLoader.dataset),
+        100. * correct / len(testLoader.dataset)))
