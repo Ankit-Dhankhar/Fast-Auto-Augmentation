@@ -2,8 +2,12 @@
 @author: Ankit Dhankhar
 @contact: adhankhar@cs.iitr.ac.in
 """
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from torchsummary import summary
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class BaseNet(nn.Module):
@@ -14,6 +18,7 @@ class BaseNet(nn.Module):
     Output:
         Classification probability (N classes)
     """
+
     def __init__(self):
         super(BaseNet, self).__init__()
         self.conv1 = nn.Conv2d(3, 6, 5)
@@ -32,6 +37,7 @@ class BaseNet(nn.Module):
         x = self.fc3(x)
         return x
 
-if __name__ == '__main__':
-    model = BaseNet()
-    print(model)
+
+if __name__ == "__main__":
+    model = BaseNet().to(device)
+    summary(model, input_size=(3, 32, 32))

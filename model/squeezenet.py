@@ -1,35 +1,40 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
+from torchsummary import summary
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 class Fire(nn.Module):
-    def __init__(self, inplanes, squeeze_planes,
-        expand1x1_planes, expand3x3_planes):
+    def __init__(self, inplanes, squeeze_planes, expand1x1_planes, expand3x3_planes):
         super(Fire, self).__init__()
         self.inplanes = inplanes
         self.squeeze = nn.Conv2d(inplanes, squeeze_planes, kernel_size=1)
         self.squeeze_activation = nn.ReLU(inplace=True)
-        self.expand1x1 = nn.Conv2d(squeeze_planes, expand1x1_planes,
-                                kernel_size=1)
+        self.expand1x1 = nn.Conv2d(squeeze_planes, expand1x1_planes, kernel_size=1)
         self.expand1x1_activation = nn.ReLU(inplace=True)
-        self.expand3x3 = nn.Conv2d(squeeze_planes, expand3x3_planes,
-                        kernel_size=3, padding=1)
+        self.expand3x3 = nn.Conv2d(
+            squeeze_planes, expand3x3_planes, kernel_size=3, padding=1
+        )
         self.expand3x3_activation = nn.ReLU(inplace=True)
 
     def forward(self, x):
         x = self.squeeze_activation(self.squeeze(x))
-        return torch.cat([
-            self.expand1x1_activation(self.expand1x1(x)),
-            self.expand3x3_activation(self.expand3x3(x))
-        ], dim=1)
-        
-class SqueezeNet(nn.Module):
+        return torch.cat(
+            [
+                self.expand1x1_activation(self.expand1x1(x)),
+                self.expand3x3_activation(self.expand3x3(x)),
+            ],
+            dim=1,
+        )
 
-    def __init__(self, version='1_0', num_classes=100):
+
+class SqueezeNet(nn.Module):
+    def __init__(self, version="1_0", num_classes=100):
         super(SqueezeNet, self).__init__()
         self.num_classes = num_classes
-        if version == '1_0':
+        if version == "1_0":
             self.features = nn.Sequential(
                 nn.Conv2d(3, 96, kernel_size=7, stride=2),
                 nn.ReLU(inplace=True),
@@ -45,7 +50,7 @@ class SqueezeNet(nn.Module):
                 nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
                 Fire(512, 64, 256, 256),
             )
-        elif version == '1_1':
+        elif version == "1_1":
             self.features = nn.Sequential(
                 nn.Conv2d(3, 64, kernel_size=3, stride=2),
                 nn.ReLU(inplace=True),
@@ -61,8 +66,10 @@ class SqueezeNet(nn.Module):
                 Fire(384, 64, 256, 256),
             )
         else:
-            raise ValueError("Unsupported SqueezeNet version {version}:"
-                            "1_0 or 1_1 expected".format(version=version))
+            raise ValueError(
+                "Unsupported SqueezeNet version {version}:"
+                "1_0 or 1_1 expected".format(version=version)
+            )
 
         # Final Convolution is initialized differently from rest
         final_conv = nn.Conv2d(512, self.num_classes, kernel_size=1)
@@ -70,9 +77,8 @@ class SqueezeNet(nn.Module):
             nn.Dropout(p=0.5),
             final_conv,
             nn.ReLU(inplace=True),
-            nn.AdaptiveAvgPool2d((1,1))
+            nn.AdaptiveAvgPool2d((1, 1)),
         )
-
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -86,8 +92,9 @@ class SqueezeNet(nn.Module):
     def forward(self, x):
         x = self.features(x)
         x = self.classifier(x)
-        return torch.flatten(x,1)
+        return torch.flatten(x, 1)
 
-if __name__ == '__main__':
-    model = SqueezeNet()
-    print(model)
+
+if __name__ == "__main__":
+    model = SqueezeNet().to(device)
+    summary(model, input_size=(3, 32, 32))
