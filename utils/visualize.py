@@ -2,14 +2,13 @@
 @author: Ankit Dhankhar
 @contact: adhankhar@cs.iitr.ac.in
 """
-from __future__ import absolute_import
 import matplotlib.pyplot as plt
 import torch
 import torch.nn as nn
 import torchvision
 from torchvision import transforms
 import numpy as np
-from misc import *
+from .misc import *
 
 __all__ = ["make_image", "show_batch", "show_mask", "show_mask_single"]
 

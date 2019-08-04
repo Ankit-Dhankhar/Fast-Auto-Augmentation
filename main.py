@@ -14,7 +14,7 @@ from model.baseline import BaseNet
 from model.squeezenet import SqueezeNet
 import torchvision.models as models
 from utils.transforms import train_transform, test_transform
-from utils import Bar, Logger, AverageMeter, accuracy, mkdir_p, savefig, save_checkpoint
+from utils import Bar, Logger, accuracy, mkdir_p, savefig, save_checkpoint
 
 parser = argparse.ArgumentParser(description="MicroNet Challenge")
 
@@ -140,13 +140,17 @@ trainLoader = DataLoader(
     trainDataset,
     shuffle=False,
     num_workers=args.cpu_workers,
-    batch_size=args.batch_size,
+    batch_size=args.train_batch_size,
 )
 testLoader = DataLoader(
-    testDataset, shuffle=False, num_workers=args.cpu_workers, batch_size=args.batch_size
+    testDataset,
+    shuffle=False,
+    num_workers=args.cpu_workers,
+    batch_size=args.test_batch_size,
 )
 
-print("Batch Size : ", args.batch_size)
+print("Batch Size : ", args.train_batch_size)
+print("Test Batch Size : ", args.test_batch_size)
 print("Number of batches in training set : ", trainLoader.__len__())
 print("Number of batches in testing set : ", testLoader.__len__())
 
@@ -154,19 +158,25 @@ print("Number of batches in testing set : ", testLoader.__len__())
 # Setup Model, Loss function & Optimizer
 #  -----------------------------------------------------------------------
 model = SqueezeNet().to(device)
-print('\tTotal params: %.2fM' % (sum(p.numel() for p in model.parameters())/1000000.0))
+print(
+    "\tTotal params: %.2fM" % (sum(p.numel() for p in model.parameters()) / 1000000.0)
+)
 print("Device : ", device)
 if "cuda" in str(device):
     model = torch.nn.DataParallel(model, args.gpu_ids)
-optimizer = torch.optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=weight_decay)
+optimizer = torch.optim.SGD(
+    model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay
+)
 criterion = nn.CrossEntropyLoss()
+
 
 def adjust_learning_rate(optimizer, epoch):
     global state
     if epoch in args.schedule:
-        state['lr'] *= args.gamma
+        state["lr"] *= args.gamma
         for param_group in optimizer.params_groups:
-            param_group['lr'] = state['lr']
+            param_group["lr"] = state["lr"]
+
 
 for epoch in range(0, args.epochs):
     model.train()
