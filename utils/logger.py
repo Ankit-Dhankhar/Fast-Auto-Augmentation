@@ -58,7 +58,7 @@ class Logger(object):
         self.numbers = {}
         self.names = names
         for _, name in enumerate(self.names):
-            self.file.write(names)
+            self.file.write(name)
             self.file.write("\t")
             self.numbers[name] = []
         self.file.write("\n")
@@ -67,9 +67,9 @@ class Logger(object):
     def append(self, numbers):
         assert len(self.names) == len(
             numbers
-        ), "Length of numbers do not match legth of names"
+        ), "Length of numbers do not match length of names"
         for index, num in enumerate(numbers):
-            self.file.write("{0:.6}".format(num))
+            self.file.write("{0:.6f}".format(num))
             self.file.write("\t")
             self.numbers[self.names[index]].append(num)
         self.file.write("\n")
@@ -78,9 +78,9 @@ class Logger(object):
     def plot(self, names=None):
         names = self.names if names == None else names
         numbers = self.numbers
-        for _, names in enumerate(names):
-            x = np.arrange(len(numbers[name]))
-            plt.plot(x, np.arrange(numbers[name]))
+        for _, name in enumerate(names):
+            x = np.arange(len(numbers[name]))
+            plt.plot(x, np.asarray(numbers[name]))
         plt.legend([self.title + "(" + name + ")" for name in names])
         plt.grid(True)
 

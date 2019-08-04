@@ -7,7 +7,9 @@ import os
 import sys
 import time
 import math
+import shutil
 
+import torch
 import torch.nn as nn
 import torch.nn.init as init
 from torch.autograd import Variable
@@ -93,8 +95,8 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-def save_checkpoint(state, is_best, checkpoiny="checkpoint", filename="checkpoint.pth"):
-    filename = os.path.join(checkpoint, filename)
+def save_checkpoint(state, is_best, checkpoint="checkpoint", filename="checkpoint.pth"):
+    filepath = os.path.join(checkpoint, filename)
     torch.save(state, filepath)
     if is_best:
         shutil.copyfile(filepath, os.path.join(checkpoint, "model_best.pth"))
