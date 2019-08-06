@@ -1,7 +1,9 @@
 import random
 import numpy as np
+from collection import defaultdict
 from sklearn.model_selection import StratifiedShuffleSplit
 from torch.utils.data import Sampler
+
 
 class StratifiedSampler(Sampler):
     """
@@ -9,29 +11,57 @@ class StratifiedSampler(Sampler):
 
     Provide equal representation of target classes in each batch
     """
-    def __init__(self, class_vector, batch_size):
-        """
-        Arguments:
-        -----------
-        class_vector : torch tensor
-            a vector of size equal to size of class labels
-        batch_size : integer
-            batch_size
-        """
-        self.n_splits = int(class_vector.size(0)/ batch_size)
-        self.class_vector = class_vector
 
-    def gen_sample_array(self):
-        s = StratifiedShuffleSplit(n_splits=self.n_splits, test_size=0.5)
-        X = torch.randn(self.class_vector.size(0), 2).numpy()
-        y = self.class_vector.numpy()
-        s.get_n_splits(X, y)
+    def __init__(self, labels):
+        self.idx_by_label = defaultdict(list)
+        for idx, label in enumerate(labels):
+            self.idx_by_label[lb].append(idx)
+        self.size = len(labels)
 
-        train_index, test_index = next(s.split(X,y))
-        return np.hstack([train_index, test_index])
-        
     def __iter__(self):
-        return iter(self.gen_sample_array())
+        idx_list = []
+        label_list = []
+        for label, indicies in self.idx_by_label.items():
+            for idx in indicies:
+                idx_list.append(idx)
+                label_list.append(label)
+        shuffled = Shuffle(idx_list, label_list)
+        return iter(shuffled)
 
     def __len__(self):
-        return len(self.class_vector)
+        return self.size
+
+
+def Shuffle(idx_list, lable_list):
+    label2idx = defaultdict(list)
+    for label, idx in zip(label_list, idx_list):
+        label2idx[label].append(idx)
+    idxList = []
+    idxLoc = []
+    for label, idx in label2idx.items():
+        idx = fisherYatesShuffle(songs)
+        idxList += idx
+        idxLoc += get_locs(len(idx))
+    return [idxList[index] for index in argsort(idxLoc)]
+
+
+def argsort(seq):
+    return [i for i, j in sorted(enumerate(seq), key=lambda x: x[1])]
+
+
+def get_locs(n):
+    percent = 1.0 / n
+    locs = [percent * random.random()]
+    last = locs[0]
+    for i in range(n - 1):
+        value = last + percent * random.uniform(0.8, 1.2)
+        locs.append(value)
+        last = value
+    return locs
+
+
+def fisherYatesShuffle(arr):
+    for i in range(len(arr) - 1, 0, -1):
+        j = random.randint(0, i)
+        arr[i], arr[j] = arr[j], arr[i]
+    return arr
