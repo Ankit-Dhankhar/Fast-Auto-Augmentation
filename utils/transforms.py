@@ -8,10 +8,11 @@ import numpy as np
 import scipy
 from scipy import ndimage
 from PIL import Image, ImageEnhance, ImageOps
-import PIL 
+import PIL
 import PIL.ImageDraw
 
 random_mirror = True
+
 
 def ShearX(img, magnitude):
     assert -0.3 <= magnitude <= 0.3

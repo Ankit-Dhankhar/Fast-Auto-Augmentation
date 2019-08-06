@@ -2015,7 +2015,7 @@ def get_dataloader(batch_size, data_dir="./", split=0.0, split_idx=0):
     trainloader = torch.utils.data.DataLoader(
         trainDataset,
         batch_size=batch_size,
-        shuffle=True ,# if train_sampler is None else False,
+        shuffle=True,  # if train_sampler is None else False,
         num_workers=32,
         pin_memory=True,
         # sampler=train_sampler,
