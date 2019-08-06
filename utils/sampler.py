@@ -1,6 +1,10 @@
+"""
+@author: Ankit Dhankhar
+@contact: adhankhar@cs.iitr.ac.in
+"""
 import random
 import numpy as np
-from collection import defaultdict
+from collections import defaultdict
 from sklearn.model_selection import StratifiedShuffleSplit
 from torch.utils.data import Sampler
 

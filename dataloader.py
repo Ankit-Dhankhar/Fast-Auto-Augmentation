@@ -1,3 +1,7 @@
+"""
+@author: Ankit Dhankhar
+@contact: adhankhar@cs.iitr.ac.in
+"""
 import logging
 import os
 
@@ -6,8 +10,9 @@ import torchvision
 
 from torch.utils.data import SubsetRandomSampler, Sampler, Subset
 from torchvision.transforms import transforms
-from sklearn.model_selection import StratifiedShuffleSplit
+from torchvision import datasets
 
+from utils.sampler import StratifiedSampler
 from utils.transforms import *
 
 cutout = 16
@@ -1987,8 +1992,54 @@ aug = [
 ]
 
 
-def get_dataloader(dataset, batch, dataroot, split=0.0, split_idx=0):
+def get_dataloader(batch_size, data_dir="./", split=0.0, split_idx=0):
     train_transform.transforms.insert(0, Augmentation(aug))
+    trainDataset = datasets.CIFAR100(
+        root=data_dir,
+        train=True,
+        transform=train_transform,
+        target_transform=None,
+        download=True,
+    )
+    testDataset = datasets.CIFAR100(
+        root=data_dir,
+        train=False,
+        transform=test_transform,
+        target_transform=None,
+        download=True,
+    )
+
+    valid_sampler = SubsetSampler([])
+    # train_sampler = StratifiedSampler(trainDataset.train_labels)
+
+    trainloader = torch.utils.data.DataLoader(
+        trainDataset,
+        batch_size=batch_size,
+        shuffle=True ,# if train_sampler is None else False,
+        num_workers=32,
+        pin_memory=True,
+        # sampler=train_sampler,
+        drop_last=True,
+    )
+    validloader = torch.utils.data.DataLoader(
+        trainDataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=16,
+        pin_memory=True,
+        sampler=valid_sampler,
+        drop_last=False,
+    )
+
+    testloader = torch.utils.data.DataLoader(
+        testDataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=32,
+        pin_memory=True,
+        drop_last=False,
+    )
+    return trainloader, testloader
 
 
 class CutoutDefault(object):

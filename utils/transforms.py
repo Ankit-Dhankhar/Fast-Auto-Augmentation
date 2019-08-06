@@ -1,77 +1,19 @@
+"""
+@author: Ankit Dhankhar
+@contact: adhankhar@cs.iitr.ac.in
+"""
 from torchvision import transforms
 import random
 import numpy as np
 import scipy
 from scipy import ndimage
-from PIL import Image, ImageEnhance, ImgageOps
+from PIL import Image, ImageEnhance, ImageOps
+import PIL 
+import PIL.ImageDraw
 
 random_mirror = True
 
-
-class AutoAugment(object):
-    def __init__(self):
-        self.policies = [
-            ["Invert", 0.1, 7, "Contrast", 0.2, 6],
-            ["Rotate", 0.7, 2, "TranslateX", 0.3, 9],
-            ["Sharpness", 0.8, 1, "Sharpness", 0.9, 3],
-            ["ShearY", 0.5, 8, "TranslateY", 0.7, 9],
-            ["AutoContrast", 0.5, 8, "Equalize", 0.9, 2],
-            ["ShearY", 0.2, 7, "Posterize", 0.3, 7],
-            ["Color", 0.4, 3, "Brightness", 0.6, 7],
-            ["Sharpness", 0.3, 9, "Brightness", 0.7, 9],
-            ["Equalize", 0.6, 5, "Equalize", 0.5, 1],
-            ["Contrast", 0.6, 7, "Sharpness", 0.6, 5],
-            ["Color", 0.7, 7, "TranslateX", 0.5, 8],
-            ["Equalize", 0.3, 7, "AutoContrast", 0.4, 8],
-            ["TranslateY", 0.4, 3, "Sharpness", 0.2, 6],
-            ["Brightness", 0.9, 6, "Color", 0.2, 8],
-            ["Solarize", 0.5, 2, "Invert", 0, 0.3],
-            ["Equalize", 0.2, 0, "AutoContrast", 0.6, 0],
-            ["Equalize", 0.2, 8, "Equalize", 0.6, 4],
-            ["Color", 0.9, 9, "Equalize", 0.6, 6],
-            ["AutoContrast", 0.8, 4, "Solarize", 0.2, 8],
-            ["Brightness", 0.1, 3, "Color", 0.7, 0],
-            ["Solarize", 0.4, 5, "AutoContrast", 0.9, 3],
-            ["TranslateY", 0.9, 9, "TranslateY", 0.7, 9],
-            ["AutoContrast", 0.9, 2, "Solarize", 0.8, 3],
-            ["Equalize", 0.8, 8, "Invert", 0.1, 3],
-            ["TranslateY", 0.7, 9, "AutoContrast", 0.9, 1],
-        ]
-
-    def __call__(self, img):
-        img = apply_policy(img, self.policies[random.randrange(len(self.policies))])
-        return img
-
-
-operations = {
-    "ShearX": lambda img, magnitude: shearX(img, magnitude),
-    "ShearY": lambda img, magnitude: shearY(img, magnitude),
-    "TranslateX": lambda img, magnitude: translate_x(img, magnitude),
-    "TranslateY": lambda img, magnitude: translate_y(img, magnitude),
-    "Rotate": lambda img, magnitude: rotate(img, magnitude),
-    "AutoContrast": lambda img, magnitude: auto_contrast(img, magnitude),
-    "Invert": lambda img, magnitude: invert(img, magnitude),
-    "Equalize": lambda img, magnitude: equalize(img, magnitude),
-    "Solarize": lambda img, magnitude: solarize(img, magnitude),
-    "Posterize": lambda img, magnitude: posterize(img, magnitude),
-    "Contrast": lambda img, magnitude: contrast(img, magnitude),
-    "Color": lambda img, magnitude: color(img, magnitude),
-    "Brightness": lambda img, magnitude: brightness(img, magnitude),
-    "Sharpness": lambda img, magnitude: sharpness(img, magnitude),
-    "Cutout": lambda img, magnitude: cutout(img, magnitude),
-}
-
-
-def apply_policy(img, policy):
-    if random.random() < policy[1]:
-        img = operations[policy[0]](img, policy[2])
-    if random.random() < policy[4]:
-        img = operations[policy[4]](img, policy[5])
-
-    return img
-
-
-def shearX(img, magnitude):
+def ShearX(img, magnitude):
     assert -0.3 <= magnitude <= 0.3
     if random_mirror and random.random() > 0.5:
         magnitude = -1 * magnitude
@@ -93,8 +35,8 @@ def TranslateX(img, magnitude):
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, magnitude, 0, 1, 0))
 
 
-def TranslateY(img, v):
-    assert -0.45 <= v <= 0.45
+def TranslateY(img, magnitude):
+    assert -0.45 <= magnitude <= 0.45
     if random_mirror and random.random() > 0.5:
         magnitude = -1 * magnitude
     magnitude = magnitude * img.size[1]
@@ -115,11 +57,11 @@ def TranslateYAbs(img, v):  # [-150, 150] => percentage: [-0.45, 0.45]
     return img.transform(img.size, PIL.Image.AFFINE, (1, 0, 0, 0, 1, v))
 
 
-def Rotate(image, magnitude):
+def Rotate(img, magnitude):
     assert -30 <= magnitude <= 30
     if random_mirror and random.random() > 0.5:
         magnitude = -1 * magnitude
-        return img.rotate(magnitude)
+    return img.rotate(magnitude)
 
 
 def AutoContrast(img, _):
@@ -138,7 +80,7 @@ def Flip(img, _):
     return PIL.ImageOps.mirror(img)
 
 
-def Solarize(img, v):
+def Solarize(img, magnitude):
     assert 0 <= magnitude < 256
     return PIL.ImageOps.solarize(img, magnitude)
 
@@ -162,7 +104,7 @@ def Contrast(img, magnitude):
 
 def Color(img, magnitude):
     assert 0.1 <= magnitude <= 1.9
-    return PIL.ImageEnhance.Color(img).enhance(v)
+    return PIL.ImageEnhance.Color(img).enhance(magnitude)
 
 
 def Brightness(img, magnitude):
@@ -172,7 +114,7 @@ def Brightness(img, magnitude):
 
 def Sharpness(img, magnitude):
     assert 0.1 <= magnitude < 1.9
-    return PIL.ImageEnhance.Sharpness(img).enhance(v)
+    return PIL.ImageEnhance.Sharpness(img).enhance(magnitude)
 
 
 def Cutout(img, magnitude):
@@ -197,15 +139,15 @@ def CutoutAbs(img, magnitude):
     xy = (x0, y0, x1, y1)
     color = (125, 123, 114)
     img = img.copy()
-    PIL.ImgDraw.Draw(img).rectangle(xy, color)
+    PIL.ImageDraw.Draw(img).rectangle(xy, color)
     return img
 
 
 def SamplePairing(imgs):
-    def f(img1, v):
+    def f(img1, magnitude):
         i = np.random.choice(len[imgs])
         img2 = PIL.Image.fromarray(img[i])
-        return PIL.Image.blend(img1, img2, v)
+        return PIL.Image.blend(img1, img2, magnitude)
 
     return f
 

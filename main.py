@@ -9,7 +9,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from torchvision import datasets
 from model.baseline import BaseNet
 from model.squeezenet import SqueezeNet
 from model.densenet import DenseNet
@@ -17,6 +16,7 @@ import torchvision.models as models
 from utils.transforms import train_transform, test_transform
 from progress.bar import Bar as Bar
 from utils import Logger, train, test, mkdir_p, savefig, save_checkpoint
+from dataloader import get_dataloader
 
 parser = argparse.ArgumentParser(description="MicroNet Challenge")
 
@@ -73,8 +73,8 @@ parser.add_argument(
 parser.add_argument(
     "--train-batch-size",
     type=int,
-    default=64,
-    help="Input batch size while training (default: 64)",
+    default=100,
+    help="Input batch size while training (default: 100)",
 )
 parser.add_argument(
     "--test-batch-size",
@@ -140,36 +140,8 @@ else:
 #  -----------------------------------------------------------------------
 # Importing Dataset & DataLoader
 #  -----------------------------------------------------------------------
-trainDataset = datasets.CIFAR100(
-    root=args.data_dir,
-    train=True,
-    transform=train_transform,
-    target_transform=None,
-    download=True,
-)
-testDataset = datasets.CIFAR100(
-    root=args.data_dir,
-    train=False,
-    transform=test_transform,
-    target_transform=None,
-    download=True,
-)
-
-if args.overfit is True:
-    trainDataset.data = trainDataset.data[:256]
-    testDataset.data = trainDataset.data[:256]
-
-trainLoader = DataLoader(
-    trainDataset,
-    shuffle=False,
-    num_workers=args.cpu_workers,
-    batch_size=args.train_batch_size,
-)
-testLoader = DataLoader(
-    testDataset,
-    shuffle=False,
-    num_workers=args.cpu_workers,
-    batch_size=args.test_batch_size,
+trainLoader, testLoader = get_dataloader(
+    batch_size=args.train_batch_size, data_dir=args.data_dir
 )
 
 print("Batch Size : ", args.train_batch_size)
@@ -180,7 +152,8 @@ print("Number of batches in testing set : ", testLoader.__len__())
 #  -----------------------------------------------------------------------
 # Setup Model, Loss function & Optimizer
 #  -----------------------------------------------------------------------
-model = DenseNet(depth=100, growthRate=12, dropRate=0.25).to(device)
+# model = DenseNet(depth=100, growthRate=12, dropRate=0.25).to(device)
+model = BaseNet().to(device)
 print(
     "\tTotal params: %.2fM" % (sum(p.numel() for p in model.parameters()) / 1000000.0)
 )
