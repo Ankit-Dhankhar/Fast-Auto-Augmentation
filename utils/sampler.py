@@ -19,7 +19,7 @@ class StratifiedSampler(Sampler):
     def __init__(self, labels):
         self.idx_by_label = defaultdict(list)
         for idx, label in enumerate(labels):
-            self.idx_by_label[lb].append(idx)
+            self.idx_by_label[label].append(idx)
         self.size = len(labels)
 
     def __iter__(self):
@@ -36,14 +36,14 @@ class StratifiedSampler(Sampler):
         return self.size
 
 
-def Shuffle(idx_list, lable_list):
+def Shuffle(idx_list, label_list):
     label2idx = defaultdict(list)
     for label, idx in zip(label_list, idx_list):
         label2idx[label].append(idx)
     idxList = []
     idxLoc = []
     for label, idx in label2idx.items():
-        idx = fisherYatesShuffle(songs)
+        idx = fisherYatesShuffle(idx)
         idxList += idx
         idxLoc += get_locs(len(idx))
     return [idxList[index] for index in argsort(idxLoc)]

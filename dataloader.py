@@ -11,6 +11,7 @@ import torchvision
 from torch.utils.data import SubsetRandomSampler, Sampler, Subset
 from torchvision.transforms import transforms
 from torchvision import datasets
+from sklearn.model_selection import StratifiedShuffleSplit
 
 from utils.sampler import StratifiedSampler
 from utils.transforms import *
@@ -2008,17 +2009,18 @@ def get_dataloader(batch_size, data_dir="./", split=0.0, split_idx=0):
         target_transform=None,
         download=True,
     )
+    # trainDataset.train_labels = [labels for  _, labels in trainDataset.samples]
 
     valid_sampler = SubsetSampler([])
-    # train_sampler = StratifiedSampler(trainDataset.train_labels)
+    train_sampler = StratifiedSampler(trainDataset.train_labels)
 
     trainloader = torch.utils.data.DataLoader(
         trainDataset,
         batch_size=batch_size,
-        shuffle=True,  # if train_sampler is None else False,
+        shuffle=True if train_sampler is None else False,
         num_workers=32,
         pin_memory=True,
-        # sampler=train_sampler,
+        sampler=train_sampler,
         drop_last=True,
     )
     validloader = torch.utils.data.DataLoader(
