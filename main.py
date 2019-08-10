@@ -68,7 +68,7 @@ parser.add_argument(
     help="Weight decay for regularisation (dafult: 5e-4)",
 )
 parser.add_argument(
-    "--epochs", type=int, default=300, help="number of epochs to train (default: 300)"
+    "--epochs", type=int, default=1800, help="number of epochs to train (default: 300)"
 )
 parser.add_argument(
     "--train-batch-size",
@@ -152,8 +152,8 @@ print("Number of batches in testing set : ", testLoader.__len__())
 #  -----------------------------------------------------------------------
 # Setup Model, Loss function & Optimizer
 #  -----------------------------------------------------------------------
-# model = DenseNet(depth=100, growthRate=12, dropRate=0.25).to(device)
-model = BaseNet().to(device)
+model = DenseNet(depth=100, growthRate=12, dropRate=0.25).to(device)
+# model = BaseNet().to(device)
 print(
     "\tTotal params: %.2fM" % (sum(p.numel() for p in model.parameters()) / 1000000.0)
 )
